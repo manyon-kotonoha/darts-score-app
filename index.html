@@ -118,6 +118,46 @@
 </div>
 
 <script>
+
+
+<ul id="member-list-ui" style="list-style:none; padding:0;"></ul>
+
+<script>
+    // ...（中略：設定やログイン処理はそのまま）...
+
+    // メンバー表示（削除ボタン付きに改良）
+    function renderMembers() {
+        const ui = document.getElementById('member-list-ui');
+        ui.innerHTML = members.map((m, index) => `
+            <li class="member-item">
+                <span style="flex:1;">${m.name}</span>
+                <span class="team-badge status-${m.status}" onclick="toggleTeam(${index})" style="margin-right:10px;">
+                    ${m.status === 'none' ? '未選択' : m.status === 'A' ? 'チームA' : m.status === 'B' ? 'チームB' : '不参加(-)'}
+                </span>
+                <button onclick="deleteMember(${m.id})" style="width:auto; padding:5px 10px; margin:0; background:#444; font-size:0.8rem;">×</button>
+            </li>
+        `).join('');
+    }
+
+    // メンバーをデータベースから削除する関数
+    async function deleteMember(id) {
+        if (!confirm("このメンバーを削除してよろしいですか？")) return;
+
+        const { error } = await supabaseClient
+            .from('members')
+            .delete()
+            .eq('id', id);
+
+        if (!error) {
+            loadMembers(); // 再読み込みして一覧を更新
+        } else {
+            alert("削除に失敗しました");
+            console.error(error);
+        }
+    }
+    
+    // ...（以下、他の関数は前回と同じ）...
+</script>
     const SB_URL = "https://zgyqsoypkzcurtuxuhew.supabase.co";
     const SB_KEY = "sb_publishable_vcc3mgwGy_DejNzF1ucz_A_2y6Gv7IC";
     const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
