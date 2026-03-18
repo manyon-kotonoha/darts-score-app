@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Midnight Darts Score</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --bg: #0b0b0e;
+            --card-bg: #16161d;
+            --primary: #7b2cbf;
+            --secondary: #3c096c;
+            --accent: #9d4edd;
+            --text: #e0e1dd;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Hiragino Kaku Gothic ProN', sans-serif;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 450px;
+            padding: 20px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid var(--secondary);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.8);
+            margin-bottom: 20px;
+        }
+
+        h1, h2 { color: var(--accent); text-align: center; margin-top: 0; }
+        
+        input, select, button {
+            width: 100%;
+            padding: 14px;
+            margin: 8px 0;
+            border-radius: 10px;
+            border: none;
+            outline: none;
+            box-sizing: border-box;
+        }
+
+        input, select {
+            background: #240046;
+            color: white;
+            border: 1px solid var(--secondary);
+        }
+
+        button {
+            background: var(--primary);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        button:active { transform: scale(0.98); opacity: 0.8; }
+        
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .hidden { display: none; }
+        
+        /* スコア表示 */
+        .score-display {
+            font-size: 3rem;
+            text-align: center;
+            font-weight: bold;
+            text-shadow: 0 0 10px var(--accent);
+            margin: 10px 0;
+        }
+
+        .member-list { list-style: none; padding: 0; }
+        .member-item {
+            background: #1e1e26;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="view-login" class="card">
+        <h1>Midnight Darts</h1>
+        <p style="text-align:center; opacity:0.7;">Enter Passcode</p>
+        <input type="password" id="login-pass" placeholder="Password">
+        <button onclick="login()">Enter Lobby</button>
+    </div>
