@@ -39,9 +39,13 @@
         .icon-btn { background: transparent; width: auto; padding: 5px; color: #666; margin: 0; }
         .icon-btn:hover { color: var(--accent); }
 
+        /* 履歴周りのスタイル */
         .stats-container { background: #000; border-radius: 8px; padding: 10px; margin-bottom: 10px; font-size: 0.85rem; }
         .stats-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #222; }
-        .history-item { font-size: 0.75rem; padding: 10px; border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center; }
+        .history-item { font-size: 0.85rem; border-bottom: 1px solid #222; padding: 10px 5px; }
+        .history-main { display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .history-details { background: #000; border-radius: 8px; padding: 8px; margin-top: 8px; font-size: 0.75rem; line-height: 1.4; display: none; }
+        .history-details.active { display: block; }
         
         .game-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0; }
         .score-box { text-align: center; padding: 15px; border-radius: 12px; background: #000; border: 2px solid transparent; cursor: pointer; }
@@ -68,7 +72,7 @@
 
         <section>
             <h2><span class="material-symbols-outlined">history</span> 直近の履歴</h2>
-            <div id="history-list" style="max-height: 150px; overflow-y: auto; background: #000; border-radius: 8px;"></div>
+            <div id="history-list" style="max-height: 250px; overflow-y: auto; background: #000; border-radius: 8px; padding: 5px;"></div>
         </section>
 
         <hr style="border:0.1px solid #333; margin:20px 0;">
@@ -246,40 +250,60 @@
         showView('view-lobby');
     }
 
+    // --- 履歴表示（アコーディオン形式） ---
     async function loadHistory() {
         const { data, error } = await supabaseClient.from('scores').select('*').order('created_at', { ascending: false });
         if(error) return;
 
         const histUi = document.getElementById('history-list');
-        histUi.innerHTML = data.slice(0, 10).map(h => {
+        histUi.innerHTML = data.slice(0, 10).map((h, i) => {
             const winTxt = h.details.winner || "";
             const isAWin = winTxt.includes("TEAM A WIN");
             const isBWin = winTxt.includes("TEAM B WIN");
 
-            const namesA = h.details.team_a_names.split(',').map(n => isAWin ? `${n}👑` : n).join(',');
-            const namesB = h.details.team_b_names.split(',').map(n => isBWin ? `${n}👑` : n).join(',');
+            // 名前を分割して王冠付与
+            const namesA = h.details.team_a_names.split(',').map(n => isAWin ? `${n}👑` : n).join(', ');
+            const namesB = h.details.team_b_names.split(',').map(n => isBWin ? `${n}👑` : n).join(', ');
 
             return `
                 <div class="history-item">
-                    <div>
-                        <span style="color:var(--accent)">${h.game_type}</span> <span style="opacity:0.5; font-size:0.6rem;">${new Date(h.created_at).toLocaleDateString()}</span><br>
-                        <span style="${isAWin ? 'color:var(--win-gold); font-weight:bold;' : ''}">${namesA}</span> vs 
-                        <span style="${isBWin ? 'color:var(--win-gold); font-weight:bold;' : ''}">${namesB}</span> 
-                        <span style="opacity:0.6;">(${h.details.final_score})</span>
+                    <div class="history-main" onclick="toggleDetails(${i})">
+                        <div style="flex-grow:1;">
+                            <span style="color:var(--accent); font-weight:bold;">${h.game_type}</span>
+                            <span style="${isAWin ? 'color:var(--win-gold);' : 'color:var(--team-a);'} font-weight:bold; margin-left:8px;">A</span>
+                            <span style="opacity:0.5;"> vs </span>
+                            <span style="${isBWin ? 'color:var(--win-gold);' : 'color:var(--team-b);'} font-weight:bold;">B</span>
+                            <span style="margin-left:8px; opacity:0.8; font-size:0.75rem;">(${h.details.final_score})</span>
+                        </div>
+                        <div style="display:flex; align-items:center;">
+                            <span class="material-symbols-outlined" style="font-size:1.2rem; opacity:0.5;">expand_more</span>
+                            <button class="icon-btn" onclick="event.stopPropagation(); deleteHistory(${h.id})">
+                                <span class="material-symbols-outlined" style="font-size:1.1rem;">delete</span>
+                            </button>
+                        </div>
                     </div>
-                    <button class="icon-btn" onclick="deleteHistory(${h.id})"><span class="material-symbols-outlined" style="font-size:1.1rem;">delete</span></button>
+                    <div id="details-${i}" class="history-details">
+                        <div style="margin-bottom:4px;"><strong style="color:var(--team-a)">Team A:</strong> ${namesA}</div>
+                        <div><strong style="color:var(--team-b)">Team B:</strong> ${namesB}</div>
+                        <div style="margin-top:5px; opacity:0.5; font-size:0.6rem;">日時: ${new Date(h.created_at).toLocaleString()}</div>
+                    </div>
                 </div>`;
         }).join('');
 
+        // ランキング更新（勝利数）
         const winCount = {};
         data.forEach(h => {
             const winTxt = h.details.winner || "";
-            const targetTeam = winTxt.includes("TEAM A WIN") ? h.details.team_a_names : winTxt.includes("TEAM B WIN") ? h.details.team_b_names : null;
-            if(targetTeam) targetTeam.split(',').forEach(n => { if(n) winCount[n] = (winCount[n] || 0) + 1; });
+            const winners = winTxt.includes("TEAM A WIN") ? h.details.team_a_names : winTxt.includes("TEAM B WIN") ? h.details.team_b_names : null;
+            if(winners) winners.split(',').forEach(n => { if(n) winCount[n] = (winCount[n] || 0) + 1; });
         });
-
         const sorted = Object.entries(winCount).sort((a,b) => b[1] - a[1]);
         document.getElementById('stats-list').innerHTML = sorted.length > 0 ? sorted.map(([name, count], i) => `<div class="stats-row"><span>${i+1}位 ${name}</span><span>${count}勝</span></div>`).join('') : "データなし";
+    }
+
+    function toggleDetails(index) {
+        const el = document.getElementById(`details-${index}`);
+        el.classList.toggle('active');
     }
 
     async function deleteHistory(id) { if (confirm("削除しますか？")) { await supabaseClient.from('scores').delete().eq('id', id); loadHistory(); } }
