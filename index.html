@@ -53,10 +53,9 @@
             display: flex; justify-content: space-between; align-items: center;
         }
         
-        /* チーム選択ボタンのスタイル */
         .team-badge {
-            padding: 5px 15px; border-radius: 20px; cursor: pointer; font-size: 0.9rem; font-weight: bold;
-            min-width: 60px; text-align: center; border: 1px solid transparent;
+            padding: 5px 10px; border-radius: 20px; cursor: pointer; font-size: 0.8rem; font-weight: bold;
+            min-width: 75px; text-align: center; border: 1px solid transparent;
         }
         .status-none { border-color: #444; color: #888; }
         .status-A { background: var(--team-a); color: white; }
@@ -67,6 +66,11 @@
             font-size: 0.85rem; padding: 10px; border-bottom: 1px solid #333;
         }
         .score-display { font-size: 3rem; text-align: center; font-weight: bold; text-shadow: 0 0 10px var(--accent); }
+        
+        .del-btn {
+            width: auto; padding: 5px 12px; margin: 0 0 0 10px;
+            background: #333; color: #888; border-radius: 5px; font-size: 0.8rem;
+        }
     </style>
 </head>
 <body>
@@ -87,8 +91,7 @@
         </section>
 
         <section>
-            <h2>新しいゲームを開始</h2>
-            <p style="font-size:0.8rem; text-align:center; opacity:0.7;">名前をタップしてチーム分け</p>
+            <h2>対戦メンバー選択</h2>
             <ul id="member-list-ui" style="list-style:none; padding:0;"></ul>
             
             <select id="game-type">
@@ -102,8 +105,8 @@
         <hr style="border:0.5px solid var(--secondary); margin:25px 0;">
 
         <section>
-            <h2>メンバー追加</h2>
-            <input type="text" id="new-member-name" placeholder="名前を入力">
+            <h2>メンバー登録</h2>
+            <input type="text" id="new-member-name" placeholder="新しい名前を入力">
             <button onclick="addMember()">登録する</button>
         </section>
     </div>
@@ -112,52 +115,13 @@
         <h2 id="game-title">対戦中</h2>
         <div class="score-display" id="display-score">0</div>
         <input type="number" id="input-points" placeholder="得点を入力" inputmode="numeric">
-        <button onclick="submitScore()">更新</button>
+        <button onclick="submitScore()">スコア更新</button>
         <button onclick="endGame()" style="background:#444; margin-top:20px;">ゲームを終了して保存</button>
     </div>
 </div>
 
 <script>
-
-
-<ul id="member-list-ui" style="list-style:none; padding:0;"></ul>
-
-<script>
-    // ...（中略：設定やログイン処理はそのまま）...
-
-    // メンバー表示（削除ボタン付きに改良）
-    function renderMembers() {
-        const ui = document.getElementById('member-list-ui');
-        ui.innerHTML = members.map((m, index) => `
-            <li class="member-item">
-                <span style="flex:1;">${m.name}</span>
-                <span class="team-badge status-${m.status}" onclick="toggleTeam(${index})" style="margin-right:10px;">
-                    ${m.status === 'none' ? '未選択' : m.status === 'A' ? 'チームA' : m.status === 'B' ? 'チームB' : '不参加(-)'}
-                </span>
-                <button onclick="deleteMember(${m.id})" style="width:auto; padding:5px 10px; margin:0; background:#444; font-size:0.8rem;">×</button>
-            </li>
-        `).join('');
-    }
-
-    // メンバーをデータベースから削除する関数
-    async function deleteMember(id) {
-        if (!confirm("このメンバーを削除してよろしいですか？")) return;
-
-        const { error } = await supabaseClient
-            .from('members')
-            .delete()
-            .eq('id', id);
-
-        if (!error) {
-            loadMembers(); // 再読み込みして一覧を更新
-        } else {
-            alert("削除に失敗しました");
-            console.error(error);
-        }
-    }
-    
-    // ...（以下、他の関数は前回と同じ）...
-</script>
+    // --- 初期設定 ---
     const SB_URL = "https://zgyqsoypkzcurtuxuhew.supabase.co";
     const SB_KEY = "sb_publishable_vcc3mgwGy_DejNzF1ucz_A_2y6Gv7IC";
     const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
@@ -183,7 +147,7 @@
     async function loadMembers() {
         const { data, error } = await supabaseClient.from('members').select('*');
         if(!error) {
-            members = data.map(m => ({ ...m, status: 'none' })); // status: none, A, B, skip
+            members = data.map(m => ({ ...m, status: 'none' }));
             renderMembers();
         }
     }
@@ -192,10 +156,11 @@
         const ui = document.getElementById('member-list-ui');
         ui.innerHTML = members.map((m, index) => `
             <li class="member-item">
-                <span>${m.name}</span>
+                <span style="flex:1;">${m.name}</span>
                 <span class="team-badge status-${m.status}" onclick="toggleTeam(${index})">
-                    ${m.status === 'none' ? '未選択' : m.status === 'A' ? 'チームA' : m.status === 'B' ? 'チームB' : '不参加(-)'}
+                    ${m.status === 'none' ? '未選択' : m.status === 'A' ? 'Aチーム' : m.status === 'B' ? 'Bチーム' : '不参加'}
                 </span>
+                <button class="del-btn" onclick="deleteMember(${m.id})">×</button>
             </li>
         `).join('');
     }
@@ -217,6 +182,12 @@
         }
     }
 
+    async function deleteMember(id) {
+        if (!confirm("このメンバーを削除しますか？")) return;
+        const { error } = await supabaseClient.from('members').delete().eq('id', id);
+        if (!error) loadMembers();
+    }
+
     async function loadHistory() {
         const { data, error } = await supabaseClient.from('scores').select('*').order('created_at', { ascending: false }).limit(5);
         const histUi = document.getElementById('history-list');
@@ -224,8 +195,7 @@
             histUi.innerHTML = data.map(h => `
                 <div class="history-item">
                     [${h.game_type}] ${new Date(h.created_at).toLocaleDateString()} <br>
-                    結果: ${h.details.team_a_names || ''} vs ${h.details.team_b_names || ''} 
-                    (${h.details.final_score})
+                    ${h.details.team_a_names || ''} vs ${h.details.team_b_names || ''} (${h.details.final_score})
                 </div>
             `).join('');
         } else {
@@ -236,28 +206,24 @@
     function startGame() {
         const teamA = members.filter(m => m.status === 'A').map(m => m.name);
         const teamB = members.filter(m => m.status === 'B').map(m => m.name);
-        
         if(teamA.length === 0 && teamB.length === 0) {
-            alert("チームAまたはBにメンバーを振り分けてください");
+            alert("チームを振り分けてください");
             return;
         }
-
         currentGame.teamA = teamA;
         currentGame.teamB = teamB;
         const type = document.getElementById('game-type').value;
         currentGame.type = type;
         currentGame.score = (type === 'countup') ? 0 : parseInt(type);
-        
-        document.getElementById('game-title').innerText = `${type}`;
+        document.getElementById('game-title').innerText = type;
         updateScoreDisplay();
         showView('view-game');
     }
 
     function submitScore() {
         const points = parseInt(document.getElementById('input-points').value) || 0;
-        if(currentGame.type === 'countup') {
-            currentGame.score += points;
-        } else {
+        if(currentGame.type === 'countup') currentGame.score += points;
+        else {
             currentGame.score -= points;
             if(currentGame.score < 0) { alert("バースト！"); currentGame.score += points; }
         }
@@ -270,11 +236,11 @@
             game_type: currentGame.type,
             details: { 
                 final_score: currentGame.score,
-                team_a_names: currentGame.teamA.join(', '),
-                team_b_names: currentGame.teamB.join(', ')
+                team_a_names: currentGame.teamA.join(','),
+                team_b_names: currentGame.teamB.join(',')
             }
         }]);
-        alert("保存しました！");
+        alert("保存完了！");
         loadData();
         showView('view-lobby');
     }
