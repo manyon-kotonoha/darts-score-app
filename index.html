@@ -128,10 +128,12 @@
 </div>
 
 <script>
-    // --- Supabase設定 ---
+   // --- Supabase設定 ---
     const SB_URL = "https://zgyqsoypkzcurtuxuhew.supabase.co";
     const SB_KEY = "sb_publishable_vcc3mgwGy_DejNzF1ucz_A_2y6Gv7IC";
-    const supabase = supabase.createClient(SB_URL, SB_KEY);
+    
+    // 変数名を supabaseClient に統一します
+    const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
 
     let members = [];
     let currentGame = { type: '', score: 0, history: [] };
@@ -139,7 +141,8 @@
     // 1. ログイン処理
     function login() {
         const pass = document.getElementById('login-pass').value;
-        if(pass === "1234111") { // パスワードは自由に変更してください
+        // あなたが設定した新しいパスワード
+        if(pass === "1234111") { 
             showView('view-lobby');
             loadMembers();
         } else {
@@ -151,19 +154,26 @@
     async function addMember() {
         const name = document.getElementById('new-member-name').value;
         if(!name) return;
-        const { data, error } = await supabase.from('members').insert([{ name }]).select();
+        // supabase → supabaseClient に修正
+        const { data, error } = await supabaseClient.from('members').insert([{ name }]).select();
         if(!error) {
             document.getElementById('new-member-name').value = '';
             loadMembers();
+        } else {
+            console.error("追加失敗:", error);
+            alert("保存に失敗しました");
         }
     }
 
     async function loadMembers() {
-        const { data, error } = await supabase.from('members').select('*');
+        // supabase → supabaseClient に修正
+        const { data, error } = await supabaseClient.from('members').select('*');
         if(!error) {
             members = data;
             const ui = document.getElementById('member-list-ui');
             ui.innerHTML = data.map(m => `<li class="member-item">${m.name}</li>`).join('');
+        } else {
+            console.error("読み込み失敗:", error);
         }
     }
 
@@ -184,7 +194,7 @@
             currentGame.score -= points;
             if(currentGame.score < 0) {
                 alert("Bust!");
-                currentGame.score += points; // 戻す
+                currentGame.score += points; 
             }
         }
         document.getElementById('input-points').value = '';
@@ -197,8 +207,8 @@
     }
 
     async function endGame() {
-        // 結果をSupabaseに保存
-        await supabase.from('scores').insert([{
+        // supabase → supabaseClient に修正
+        await supabaseClient.from('scores').insert([{
             game_type: currentGame.type,
             details: { final_score: currentGame.score }
         }]);
