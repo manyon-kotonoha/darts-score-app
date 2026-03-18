@@ -38,7 +38,6 @@
         .icon-btn { background: transparent; width: auto; padding: 5px; color: #666; margin: 0; }
         .icon-btn:hover { color: var(--accent); }
 
-        /* 統計・履歴のスタイル */
         .stats-container { background: #000; border-radius: 8px; padding: 10px; margin-bottom: 10px; font-size: 0.85rem; }
         .stats-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #222; }
         .history-item { font-size: 0.75rem; padding: 10px; border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center; }
@@ -73,13 +72,14 @@
                 <input type="text" id="new-member-name" placeholder="名前を入力" style="margin:0;">
                 <button onclick="addMember()" style="width: auto; margin:0;"><span class="material-symbols-outlined">add</span></button>
             </div>
+            <ul id="member-list-ui" style="list-style:none; padding:0; margin-top: 20px;">
+                <p style="text-align:center; opacity:0.5;">読み込み中...</p>
+            </ul>
         </section>
 
-        <section style="margin-top: 20px;">
-            <ul id="member-list-ui" style="list-style:none; padding:0;"></ul>
-        </section>
+        <hr style="border:0.1px solid #333; margin:20px 0;">
 
-        <button onclick="startGame()" style="background:var(--accent); margin-top:20px;">
+        <button onclick="startGame()" style="background:var(--accent); margin-top:10px;">
             <span class="material-symbols-outlined">play_arrow</span> 対戦スタート
         </button>
         <select id="game-type" style="margin-top:5px;">
@@ -108,19 +108,36 @@
 
     function login() {
         const pass = document.getElementById('login-pass').value;
-        if(pass === "1234111") { showView('view-lobby'); loadData(); }
-        else { alert("パスワードが違います"); }
+        if(pass === "1234111") { 
+            showView('view-lobby'); 
+            loadData(); 
+        } else { alert("パスワードが違います"); }
     }
 
-    async function loadData() { loadMembers(); loadHistory(); }
+    async function loadData() { 
+        await loadMembers(); 
+        await loadHistory(); 
+    }
 
     async function loadMembers() {
         const { data, error } = await supabaseClient.from('members').select('*').order('id', { ascending: true });
-        if(!error) { members = data.map(m => ({ ...m, status: 'none' })); renderMembers(); }
+        if(!error) { 
+            members = data.map(m => ({ ...m, status: 'none' })); 
+            renderMembers(); 
+        } else {
+            console.error("メンバー取得失敗:", error);
+        }
     }
 
     function renderMembers() {
         const ui = document.getElementById('member-list-ui');
+        if(!ui) return;
+        
+        if (members.length === 0) {
+            ui.innerHTML = '<p style="text-align:center; opacity:0.5;">登録されたメンバーはいません</p>';
+            return;
+        }
+
         ui.innerHTML = members.map((m, index) => `
             <li class="member-item">
                 <div style="font-weight:bold; font-size:0.9rem;">${m.name}</div>
@@ -135,48 +152,53 @@
 
     function toggleTeam(index) {
         const states = ['none', 'A', 'B', 'skip'];
-        members[index].status = states[(states.indexOf(members[index].status) + 1) % states.length];
+        let current = states.indexOf(members[index].status);
+        members[index].status = states[(current + 1) % states.length];
         renderMembers();
     }
 
     async function addMember() {
         const name = document.getElementById('new-member-name').value;
-        if(name) { await supabaseClient.from('members').insert([{ name }]); document.getElementById('new-member-name').value = ''; loadMembers(); }
+        if(!name) return;
+        const { error } = await supabaseClient.from('members').insert([{ name }]);
+        if(!error) { 
+            document.getElementById('new-member-name').value = ''; 
+            await loadMembers(); 
+        }
     }
 
     async function editMember(id, currentName) {
         const newName = prompt("名前を変更:", currentName);
-        if (newName && newName !== currentName) { await supabaseClient.from('members').update({ name: newName }).eq('id', id); loadMembers(); }
+        if (newName && newName !== currentName) { 
+            await supabaseClient.from('members').update({ name: newName }).eq('id', id); 
+            loadMembers(); 
+        }
     }
 
     async function deleteMember(id) {
-        if (confirm("削除しますか？")) { await supabaseClient.from('members').delete().eq('id', id); loadMembers(); }
+        if (confirm("削除しますか？")) { 
+            await supabaseClient.from('members').delete().eq('id', id); 
+            loadMembers(); 
+        }
     }
 
     async function loadHistory() {
         const { data, error } = await supabaseClient.from('scores').select('*').order('created_at', { ascending: false });
         if(error) return;
 
-        // 履歴の表示
         const histUi = document.getElementById('history-list');
         histUi.innerHTML = data.slice(0, 10).map(h => `
             <div class="history-item">
                 <div>
                     <span style="color:var(--accent)">${h.game_type}</span> <span style="opacity:0.5; font-size:0.6rem;">${new Date(h.created_at).toLocaleDateString()}</span><br>
-                    ${h.details.team_a_names || '-'} vs ${h.details.team_b_names || '-'} (Score: ${h.details.final_score})
+                    ${h.details.team_a_names || '-'} vs ${h.details.team_b_names || '-'} (${h.details.final_score})
                 </div>
                 <button class="icon-btn" onclick="deleteHistory(${h.id})"><span class="material-symbols-outlined" style="font-size:1.1rem;">delete</span></button>
             </div>
         `).join('');
 
-        // 統計（勝利数）の集計
-        // ※ 01ゲームでスコア0、またはカウントアップで記録があるチームを勝ちとみなす簡易集計
         const winCount = {};
         data.forEach(h => {
-            const winners = (h.game_type !== 'countup' && h.details.final_score === 0) 
-                            ? h.details.team_a_names.split(',') // 本来は勝ったチームを特定すべきですが、今は参加者全員に1加算
-                            : []; 
-            // 今回はシンプルに「参加回数」をベースにしたランキングを表示
             h.details.team_a_names?.split(',').forEach(n => { if(n) winCount[n] = (winCount[n] || 0) + 1; });
             h.details.team_b_names?.split(',').forEach(n => { if(n) winCount[n] = (winCount[n] || 0) + 1; });
         });
@@ -189,7 +211,7 @@
     }
 
     async function deleteHistory(id) {
-        if (confirm("この履歴を削除しますか？")) {
+        if (confirm("履歴を削除しますか？")) {
             await supabaseClient.from('scores').delete().eq('id', id);
             loadHistory();
         }
@@ -220,7 +242,9 @@
             game_type: currentGame.type,
             details: { final_score: currentGame.score, team_a_names: currentGame.teamA.join(','), team_b_names: currentGame.teamB.join(',') }
         }]);
-        alert("保存完了！"); loadData(); showView('view-lobby');
+        alert("保存完了！"); 
+        await loadData(); 
+        showView('view-lobby');
     }
 
     function showView(viewId) {
