@@ -169,8 +169,6 @@
         hr { border: 0; border-top: 1px solid #333; margin: 25px 0; }
     </style>
 </head>
-<body>
-
 <div class="container">
     <div id="view-login" class="card">
         <h1>Darts Score Board</h1>
@@ -228,8 +226,13 @@
         <div style="text-align: center; margin-bottom: 10px; font-size: 0.8rem; opacity: 0.8;">
             入力対象: <strong id="target-label">TEAM A</strong>
         </div>
-        <input type="number" id="input-points" placeholder="得点入力" inputmode="numeric" style="font-size: 2rem; text-align: center; border-color: #444;">
-        <button onclick="submitScore()" style="border-color:var(--neon-blue);"><span class="material-symbols-outlined">check_circle</span> スコア更新</button>
+        <input type="number" id="input-points" placeholder="現在のスコアを入力" inputmode="numeric" style="font-size: 2rem; text-align: center; border-color: #444;">
+        
+        <div style="display: flex; gap: 10px;">
+            <button onclick="submitScore()" style="flex: 3; border-color:var(--neon-blue);"><span class="material-symbols-outlined">check_circle</span> 更新</button>
+            <button onclick="undoScore()" style="flex: 1; border-color:var(--skip); color:#ccc; text-shadow:none;"><span class="material-symbols-outlined">undo</span></button>
+        </div>
+
         <button onclick="finishGame()" style="border-color:#444; color:#666; text-shadow:none; margin-top:20px;"><span class="material-symbols-outlined">sports_score</span> ゲーム終了・判定</button>
     </div>
 
@@ -254,21 +257,20 @@
 
     let members = [];
     let currentGame = { type: '', teamA: [], teamB: [], scoreA: 0, scoreB: 0 };
+    let scoreHistory = []; // ★履歴保存用スタック
     let currentTarget = 'A';
 
+    /* --- 既存のログイン・ロード関数 --- */
     function login() {
         const pass = document.getElementById('login-pass').value;
         if(pass === "1234111") { showView('view-lobby'); loadData(); }
         else { alert("パスワードが違います"); }
     }
-
     async function loadData() { await loadMembers(); await loadHistory(); }
-
     async function loadMembers() {
         const { data, error } = await supabaseClient.from('members').select('*').order('id', { ascending: true });
         if(!error) { members = data.map(m => ({ ...m, status: 'none' })); renderMembers(); }
     }
-
     function renderMembers() {
         const ui = document.getElementById('member-list-ui');
         if(!ui) return;
@@ -283,22 +285,18 @@
                 </li>
             `).join('');
     }
-
     function toggleTeam(index) {
         const states = ['none', 'A', 'B', 'skip'];
         members[index].status = states[(states.indexOf(members[index].status) + 1) % states.length];
         renderMembers();
     }
-
     async function addMember() {
         const name = document.getElementById('new-member-name').value;
         if(name) { await supabaseClient.from('members').insert([{ name }]); document.getElementById('new-member-name').value = ''; loadMembers(); }
     }
+    async function deleteMember(id) { if (confirm("削除しますか？")) { await supabaseClient.from('members').delete().eq('id', id); loadMembers(); } }
 
-    async function deleteMember(id) {
-        if (confirm("削除しますか？")) { await supabaseClient.from('members').delete().eq('id', id); loadMembers(); }
-    }
-
+    /* --- ゲームロジック --- */
     function startGame() {
         const teamA = members.filter(m => m.status === 'A').map(m => m.name);
         const teamB = members.filter(m => m.status === 'B').map(m => m.name);
@@ -306,6 +304,7 @@
 
         const type = document.getElementById('game-type').value;
         currentGame = { type, teamA, teamB, scoreA: (type === 'countup' ? 0 : parseInt(type)), scoreB: (type === 'countup' ? 0 : parseInt(type)) };
+        scoreHistory = []; // 履歴リセット
         
         document.getElementById('game-members-A').innerText = teamA.join(', ');
         document.getElementById('game-members-B').innerText = teamB.join(', ');
@@ -325,14 +324,25 @@
     }
 
     function submitScore() {
-        const pts = parseInt(document.getElementById('input-points').value) || 0;
+        const val = parseInt(document.getElementById('input-points').value);
+        if (isNaN(val)) return;
+
+        // ★現在の状態を履歴に保存（ディープコピー）
+        scoreHistory.push({ scoreA: currentGame.scoreA, scoreB: currentGame.scoreB });
+
         const key = `score${currentTarget}`;
-        if(currentGame.type === 'countup') currentGame[key] += pts;
-        else {
-            if(currentGame[key] - pts < 0) alert("バースト！");
-            else currentGame[key] -= pts;
-        }
+        currentGame[key] = val; // そのまま更新
+
         document.getElementById('input-points').value = '';
+        updateScoreDisplay();
+    }
+
+    // ★一つ前に戻す関数
+    function undoScore() {
+        if (scoreHistory.length === 0) return;
+        const lastState = scoreHistory.pop();
+        currentGame.scoreA = lastState.scoreA;
+        currentGame.scoreB = lastState.scoreB;
         updateScoreDisplay();
     }
 
@@ -341,6 +351,7 @@
         document.getElementById('score-B').innerText = currentGame.scoreB;
     }
 
+    /* --- 以下、履歴保存・表示等の既存関数 --- */
     function finishGame() {
         let text = "";
         const sA = currentGame.scoreA; const sB = currentGame.scoreB;
@@ -349,13 +360,11 @@
         } else {
             if (sA < sB) text = "TEAM A WIN!"; else if (sB < sA) text = "TEAM B WIN!"; else text = "DRAW GAME";
         }
-        
         const winAnn = document.getElementById('winner-announcement');
         winAnn.innerText = text;
         if(text.includes("A WIN")) { winAnn.style.color = "var(--neon-pink)"; winAnn.style.textShadow = "var(--neon-pink-glow)"; }
         else if(text.includes("B WIN")) { winAnn.style.color = "var(--neon-blue)"; winAnn.style.textShadow = "var(--neon-blue-glow)"; }
         else { winAnn.style.color = "white"; winAnn.style.textShadow = "none"; }
-
         document.getElementById('result-score-A').innerText = sA;
         document.getElementById('result-score-B').innerText = sB;
         showView('view-result');
@@ -373,16 +382,13 @@
     async function loadHistory() {
         const { data, error } = await supabaseClient.from('scores').select('*').order('created_at', { ascending: false });
         if(error) return;
-
         const histUi = document.getElementById('history-list');
         histUi.innerHTML = data.slice(0, 10).map((h, i) => {
             const winTxt = h.details.winner || "";
             const isAWin = winTxt.includes("TEAM A WIN");
             const isBWin = winTxt.includes("TEAM B WIN");
-
             const namesA = h.details.team_a_names.split(',').map(n => isAWin ? `${n}👑` : n).join(', ');
             const namesB = h.details.team_b_names.split(',').map(n => isBWin ? `${n}👑` : n).join(', ');
-
             return `
                 <div class="history-item">
                     <div class="history-main" onclick="toggleDetails(${i})">
@@ -434,5 +440,4 @@
         document.getElementById(viewId).classList.remove('hidden');
     }
 </script>
-</body>
 </html>
