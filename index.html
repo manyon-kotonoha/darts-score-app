@@ -4,15 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DartsScoreBoard</title>
-<!-- タブのアイコン（ファビコン）の設定 -->
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎯</text></svg>">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎯</text></svg>">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
 
     <style>
         :root {
-            /* ネオンカラー設定 */
             --bg: #030305;
             --card-bg: #0d0d15;
             --text: #ffffff;
@@ -27,148 +25,41 @@
             --skip: #444;
         }
 
-        body { 
-            background-color: var(--bg); 
-            color: var(--text); 
-            font-family: 'Noto Sans JP', 'Orbitron', sans-serif; 
-            margin: 0; 
-            display: flex; 
-            justify-content: center; 
-            min-height: 100vh; 
-        }
-
+        body { background-color: var(--bg); color: var(--text); font-family: 'Noto Sans JP', 'Orbitron', sans-serif; margin: 0; display: flex; justify-content: center; min-height: 100vh; }
         .container { width: 100%; max-width: 450px; padding: 20px; box-sizing: border-box; }
-
-        /* ネオンカードスタイル */
-        .card { 
-            background: var(--card-bg); 
-            border-radius: 20px; 
-            padding: 25px; 
-            border: 1px solid var(--neon-blue); 
-            box-shadow: 0 0 15px rgba(0, 242, 255, 0.2);
-            margin-bottom: 25px; 
-        }
-
-        h1 { 
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.5rem;
-            text-align: center;
-            color: var(--neon-blue);
-            text-shadow: var(--neon-blue-glow);
-            margin-bottom: 20px;
-        }
-
-        h2 { 
-            color: var(--text); 
-            font-size: 1.1rem; 
-            display: flex; 
-            align-items: center; 
-            gap: 10px; 
-            margin-top: 0; 
-            border-bottom: 1px solid #333; 
-            padding-bottom: 10px; 
-        }
-
-        input, select { 
-            width: 100%; 
-            padding: 15px; 
-            margin: 10px 0; 
-            border-radius: 12px; 
-            border: 1px solid #333; 
-            background: #000;
-            color: var(--text);
-            box-sizing: border-box;
-            outline: none;
-        }
-
+        .card { background: var(--card-bg); border-radius: 20px; padding: 25px; border: 1px solid var(--neon-blue); box-shadow: 0 0 15px rgba(0, 242, 255, 0.2); margin-bottom: 25px; }
+        h1 { font-family: 'Orbitron', sans-serif; font-size: 1.5rem; text-align: center; color: var(--neon-blue); text-shadow: var(--neon-blue-glow); margin-bottom: 20px; }
+        h2 { color: var(--text); font-size: 1.1rem; display: flex; align-items: center; gap: 10px; margin-top: 0; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        input, select { width: 100%; padding: 15px; margin: 10px 0; border-radius: 12px; border: 1px solid #333; background: #000; color: var(--text); box-sizing: border-box; outline: none; }
         input:focus { border-color: var(--neon-blue); box-shadow: 0 0 8px var(--neon-blue); }
-
-        /* ネオンボタン */
-        button { 
-            width: 100%; 
-            padding: 15px; 
-            margin: 10px 0; 
-            border-radius: 12px; 
-            border: 2px solid var(--neon-blue); 
-            background: transparent;
-            color: var(--neon-blue);
-            font-weight: bold; 
-            cursor: pointer; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            gap: 10px; 
-            text-shadow: var(--neon-blue-glow);
-            transition: 0.3s;
-        }
-
+        button { width: 100%; padding: 15px; margin: 10px 0; border-radius: 12px; border: 2px solid var(--neon-blue); background: transparent; color: var(--neon-blue); font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; text-shadow: var(--neon-blue-glow); transition: 0.3s; }
         button:active { background: var(--neon-blue); color: #000; }
-
         .hidden { display: none; }
-
-        /* メンバーリスト */
-        .member-item { 
-            background: rgba(255, 255, 255, 0.05); 
-            padding: 12px; 
-            margin: 10px 0; 
-            border-radius: 15px; 
-            display: grid; 
-            grid-template-columns: 1fr auto auto auto; 
-            align-items: center; 
-            gap: 10px; 
-            border: 1px solid #222;
-        }
-
-        .team-btn { 
-            padding: 8px 12px; 
-            border-radius: 20px; 
-            cursor: pointer; 
-            font-size: 0.75rem; 
-            font-weight: bold; 
-            min-width: 75px; 
-            text-align: center; 
-        }
-
+        .member-item { background: rgba(255, 255, 255, 0.05); padding: 12px; margin: 10px 0; border-radius: 15px; display: grid; grid-template-columns: 1fr auto auto auto; align-items: center; gap: 10px; border: 1px solid #222; }
+        .team-btn { padding: 8px 12px; border-radius: 20px; cursor: pointer; font-size: 0.75rem; font-weight: bold; min-width: 75px; text-align: center; }
         .status-none { background: #222; color: #777; }
         .status-A { background: var(--team-a); color: white; box-shadow: var(--neon-pink-glow); }
         .status-B { background: var(--team-b); color: white; box-shadow: var(--neon-blue-glow); }
         .status-skip { background: var(--skip); color: white; }
-
         .icon-btn { border: none; width: auto; color: #555; padding: 5px; margin: 0; box-shadow: none; text-shadow: none; }
-        .icon-btn:hover { color: var(--neon-pink); }
-
-        /* 履歴・ランキング */
         .stats-container { background: #000; border-radius: 12px; padding: 15px; margin-bottom: 15px; font-size: 0.9rem; border: 1px solid #222; }
         .stats-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #222; }
-        
         .history-item { border-bottom: 1px solid #222; padding: 15px 5px; }
         .history-main { display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
         .history-details { background: #000; border-radius: 12px; padding: 12px; margin-top: 10px; font-size: 0.8rem; display: none; border: 1px solid #333; }
-        .history-details.active { display: block; }
-
-        /* 対戦中 */
         .game-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 25px 0; }
-        .score-box { 
-            text-align: center; 
-            padding: 20px 10px; 
-            border-radius: 15px; 
-            background: #000; 
-            border: 2px solid #222; 
-            cursor: pointer; 
-        }
+        .score-box { text-align: center; padding: 20px 10px; border-radius: 15px; background: #000; border: 2px solid #222; cursor: pointer; }
         .score-box.active-a { border-color: var(--team-a); box-shadow: var(--neon-pink-glow); }
         .score-box.active-b { border-color: var(--team-b); box-shadow: var(--neon-blue-glow); }
-
         .team-label { font-size: 0.8rem; font-weight: bold; margin-bottom: 8px; }
         .score-val { font-size: 3rem; font-weight: 900; font-family: 'Orbitron', sans-serif; color: #444; }
         .active-a .score-val { color: var(--team-a); text-shadow: var(--neon-pink-glow); }
         .active-b .score-val { color: var(--team-b); text-shadow: var(--neon-blue-glow); }
-        
         .members-small { font-size: 0.7rem; opacity: 0.6; min-height: 1.5rem; }
-
         hr { border: 0; border-top: 1px solid #333; margin: 25px 0; }
     </style>
 </head>
+<body>
 <div class="container">
     <div id="view-login" class="card">
         <h1>Darts Score Board</h1>
@@ -257,20 +148,21 @@
 
     let members = [];
     let currentGame = { type: '', teamA: [], teamB: [], scoreA: 0, scoreB: 0 };
-    let scoreHistory = []; // ★履歴保存用スタック
+    let scoreHistory = [];
     let currentTarget = 'A';
 
-    /* --- 既存のログイン・ロード関数 --- */
-function login() {
-    const passInput = document.getElementById('login-pass');
-    const pass = passInput.value;
-    if(pass === "1234111") { 
-        passInput.value = ""; // ★ここでパスワードを消去
-        showView('view-lobby'); 
-        loadData(); 
+    function login() {
+        const passInput = document.getElementById('login-pass');
+        const pass = passInput.value;
+        if(pass === "1234111") { 
+            passInput.value = ""; // 入力値を確実に消す
+            showView('view-lobby'); 
+            loadData(); 
+        } else { 
+            alert("パスワードが違います"); 
+        }
     }
-    else { alert("パスワードが違います"); }
-}
+
     async function loadData() { await loadMembers(); await loadHistory(); }
     async function loadMembers() {
         const { data, error } = await supabaseClient.from('members').select('*').order('id', { ascending: true });
@@ -296,25 +188,26 @@ function login() {
         renderMembers();
     }
     async function addMember() {
-        const name = document.getElementById('new-member-name').value;
-        if(name) { await supabaseClient.from('members').insert([{ name }]); document.getElementById('new-member-name').value = ''; loadMembers(); }
+        const nameInput = document.getElementById('new-member-name');
+        const name = nameInput.value;
+        if(name) { 
+            await supabaseClient.from('members').insert([{ name }]); 
+            nameInput.value = ''; 
+            loadMembers(); 
+        }
     }
     async function deleteMember(id) { if (confirm("削除しますか？")) { await supabaseClient.from('members').delete().eq('id', id); loadMembers(); } }
 
-    /* --- ゲームロジック --- */
     function startGame() {
         const teamA = members.filter(m => m.status === 'A').map(m => m.name);
         const teamB = members.filter(m => m.status === 'B').map(m => m.name);
         if(teamA.length === 0 && teamB.length === 0) return alert("チームを選んでください");
-
         const type = document.getElementById('game-type').value;
         currentGame = { type, teamA, teamB, scoreA: (type === 'countup' ? 0 : parseInt(type)), scoreB: (type === 'countup' ? 0 : parseInt(type)) };
-        scoreHistory = []; // 履歴リセット
-        
+        scoreHistory = [];
         document.getElementById('game-members-A').innerText = teamA.join(', ');
         document.getElementById('game-members-B').innerText = teamB.join(', ');
         document.getElementById('game-title-display').innerText = type.toUpperCase();
-        
         updateScoreDisplay();
         setTarget('A');
         showView('view-game');
@@ -329,20 +222,15 @@ function login() {
     }
 
     function submitScore() {
-        const val = parseInt(document.getElementById('input-points').value);
+        const inputEl = document.getElementById('input-points');
+        const val = parseInt(inputEl.value);
         if (isNaN(val)) return;
-
-        // ★現在の状態を履歴に保存（ディープコピー）
         scoreHistory.push({ scoreA: currentGame.scoreA, scoreB: currentGame.scoreB });
-
-        const key = `score${currentTarget}`;
-        currentGame[key] = val; // そのまま更新
-
-        document.getElementById('input-points').value = '';
+        currentGame[`score${currentTarget}`] = val;
+        inputEl.value = '';
         updateScoreDisplay();
     }
 
-    // ★一つ前に戻す関数
     function undoScore() {
         if (scoreHistory.length === 0) return;
         const lastState = scoreHistory.pop();
@@ -356,7 +244,6 @@ function login() {
         document.getElementById('score-B').innerText = currentGame.scoreB;
     }
 
-    /* --- 以下、履歴保存・表示等の既存関数 --- */
     function finishGame() {
         let text = "";
         const sA = currentGame.scoreA; const sB = currentGame.scoreB;
@@ -406,9 +293,7 @@ function login() {
                         </div>
                         <div style="display:flex; align-items:center;">
                             <span class="material-symbols-outlined" style="font-size:1.2rem; opacity:0.3;">expand_more</span>
-                            <button class="icon-btn" onclick="event.stopPropagation(); deleteHistory(${h.id})">
-                                <span class="material-symbols-outlined" style="font-size:1.1rem;">delete</span>
-                            </button>
+                            <button class="icon-btn" onclick="event.stopPropagation(); deleteHistory(${h.id})"><span class="material-symbols-outlined" style="font-size:1.1rem;">delete</span></button>
                         </div>
                     </div>
                     <div id="details-${i}" class="history-details">
@@ -445,4 +330,5 @@ function login() {
         document.getElementById(viewId).classList.remove('hidden');
     }
 </script>
+</body>
 </html>
