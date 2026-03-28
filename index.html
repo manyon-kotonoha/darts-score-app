@@ -166,6 +166,12 @@
         
         .members-small { font-size: 0.7rem; opacity: 0.6; min-height: 1.5rem; }
 
+function confirmAbort() {
+    if(confirm("対戦データを保存せずにロビーに戻りますか？")) {
+        showView('view-lobby');
+    }
+}
+
         hr { border: 0; border-top: 1px solid #333; margin: 25px 0; }
     </style>
 </head>
@@ -232,9 +238,17 @@
             <button onclick="submitScore()" style="flex: 3; border-color:var(--neon-blue);"><span class="material-symbols-outlined">check_circle</span> 更新</button>
             <button onclick="undoScore()" style="flex: 1; border-color:var(--skip); color:#ccc; text-shadow:none;"><span class="material-symbols-outlined">undo</span></button>
         </div>
-
-        <button onclick="finishGame()" style="border-color:#444; color:#666; text-shadow:none; margin-top:20px;"><span class="material-symbols-outlined">sports_score</span> ゲーム終了・判定</button>
-    </div>
+      
+	<div id="view-game" class="card hidden">
+    <button onclick="finishGame()" style="border-color:#444; color:#666; text-shadow:none; margin-top:20px;">
+        <span class="material-symbols-outlined">sports_score</span> ゲーム終了・判定
+    </button>
+    
+    <button onclick="confirmAbort()" style="border:none; color:#555; text-shadow:none; font-size: 0.8rem; margin-top: 10px;">
+        <span class="material-symbols-outlined" style="font-size: 1rem;">close</span> ゲームを中断して戻る
+    </button>
+</div>
+</div>
 
     <div id="view-result" class="card hidden">
         <h2 style="justify-content: center; color: var(--win-gold); text-shadow: var(--win-gold-glow);">
@@ -261,11 +275,16 @@
     let currentTarget = 'A';
 
     /* --- 既存のログイン・ロード関数 --- */
-    function login() {
-        const pass = document.getElementById('login-pass').value;
-        if(pass === "1234111") { showView('view-lobby'); loadData(); }
-        else { alert("パスワードが違います"); }
+  function login() {
+    const passInput = document.getElementById('login-pass');
+    const pass = passInput.value;
+    if(pass === "1234111") { 
+        passInput.value = ""; // ★ここでパスワードを消去
+        showView('view-lobby'); 
+        loadData(); 
     }
+    else { alert("パスワードが違います"); }
+}
     async function loadData() { await loadMembers(); await loadHistory(); }
     async function loadMembers() {
         const { data, error } = await supabaseClient.from('members').select('*').order('id', { ascending: true });
